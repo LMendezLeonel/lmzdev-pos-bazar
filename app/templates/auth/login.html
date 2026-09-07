@@ -1,0 +1,33 @@
+{% extends "base_publico.html" %}
+{% block title %}Iniciar sesión{% endblock %}
+{% block content %}
+<div class="login-fondo">
+    <div class="login-box">
+        <div class="login-logo-wrap">
+            <img src="{{ url_for('static', filename='img/lmzdev-horizontal.png') }}" alt="LMZ Dev" class="login-logo">
+        </div>
+
+        <h1>Bienvenido</h1>
+        <p class="login-subtitulo">Ingresá para continuar</p>
+
+        <form method="POST" action="{{ url_for('auth.login') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label>Código de negocio</label>
+            <input type="text" name="codigo_negocio" required autofocus>
+
+            <label>Usuario</label>
+            <input type="text" name="usuario" required>
+
+            <label>Contraseña</label>
+            <input type="password" name="password" required>
+
+            <div class="check-linea" style="margin-top:6px;">
+                <input type="checkbox" name="mantener_sesion" id="mantener_sesion">
+                <label for="mantener_sesion">Mantener sesión iniciada</label>
+            </div>
+
+            <button type="submit" class="btn-primario" style="width:100%; justify-content:center; margin-top:10px;">Ingresar</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

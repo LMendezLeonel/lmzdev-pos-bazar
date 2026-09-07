@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Notas{% endblock %}
+{% block content %}
+<h1>Notas</h1>
+<p style="color:var(--texto-muted); margin-top:-10px; font-size:13.5px;">Recordatorios internos del negocio — pedidos, cobros pendientes, lo que haga falta anotar.</p>
+
+<div class="tabla-wrap" style="padding:18px; max-width:640px;">
+<form method="POST" action="{{ url_for('notas.nueva') }}" style="display:flex; gap:10px; align-items:flex-start;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div style="flex:1;">
+        <textarea name="contenido" rows="2" placeholder="Ej: No olvidar hacer pedido de televisiones" required style="margin-bottom:0;"></textarea>
+    </div>
+    <button type="submit" class="btn-primario">Agregar</button>
+</form>
+</div>
+
+<div style="max-width:640px; margin-top:18px; display:flex; flex-direction:column; gap:10px;">
+    {% for n in notas %}
+    <div class="tabla-wrap" style="margin:0; padding:14px 16px; display:flex; align-items:flex-start; gap:12px; {{ 'opacity:0.5;' if n.hecha else '' }}">
+        <form method="POST" action="{{ url_for('notas.marcar', nota_id=n.id) }}" style="margin:0;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-chico {{ 'btn-exito' if not n.hecha else '' }}" title="Marcar como {{ 'pendiente' if n.hecha else 'hecha' }}">
+                {{ 'Hecha' if n.hecha else 'Marcar hecha' }}
+            </button>
+        </form>
+        <div style="flex:1;">
+            <div style="{{ 'text-decoration:line-through;' if n.hecha else '' }}">{{ n.contenido }}</div>
+            <div style="font-size:11px; color:var(--texto-muted); margin-top:4px;">
+                {{ n.autor or 'Sistema' }} — {{ n.fecha_creacion }}
+            </div>
+        </div>
+        <form method="POST" action="{{ url_for('notas.eliminar', nota_id=n.id) }}" onsubmit="return confirm('¿Eliminar esta nota?');" style="margin:0;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-peligro btn-chico">Eliminar</button>
+        </form>
+    </div>
+    {% else %}
+    <div class="tabla-wrap" style="padding:24px; text-align:center; color:var(--texto-muted);">
+        No hay notas todavía.
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

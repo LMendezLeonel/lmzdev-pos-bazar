@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Nuevo cliente{% endblock %}
+{% block content %}
+<h1>Nuevo cliente (bazar)</h1>
+<div class="tabla-wrap" style="padding:24px; max-width:480px;">
+<form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Nombre del bazar</label>
+    <input type="text" name="nombre_bazar" required>
+
+    <label>Código de negocio (para el login, sin espacios)</label>
+    <input type="text" name="codigo_negocio" required>
+
+    <hr style="border-color:var(--border); margin:16px 0;">
+    <p style="font-size:13px; color:var(--texto-muted);">Usuario Dueño inicial:</p>
+
+    <label>Nombre</label>
+    <input type="text" name="nombre_dueno" required>
+
+    <label>Usuario</label>
+    <input type="text" name="usuario_dueno" required>
+
+    <label>Contraseña</label>
+    <input type="password" name="password_dueno" required>
+
+    <div style="display:flex; gap:10px; margin-top:16px;">
+        <button type="submit" class="btn-primario">Crear cliente</button>
+        <a href="{{ url_for('admin.index') }}" class="btn">Cancelar</a>
+    </div>
+</form>
+</div>
+{% endblock %}

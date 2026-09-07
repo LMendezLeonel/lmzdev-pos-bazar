@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Clientes{% endblock %}
+{% block content %}
+<div class="topbar">
+    <h1 style="margin:0">Clientes (bazares)</h1>
+    <a href="{{ url_for('admin.nuevo') }}" class="btn btn-primario">+ Nuevo cliente</a>
+    <a href="{{ url_for('admin.logout') }}" class="btn">Salir</a>
+</div>
+<div class="tabla-wrap">
+<table>
+    <thead><tr><th>Nombre</th><th>Código de negocio</th><th>Usuario admin</th><th>Alta</th></tr></thead>
+    <tbody>
+        {% for c in clientes %}
+        <tr>
+            <td><strong>{{ c.nombre_bazar }}</strong></td>
+            <td>{{ c.db_filename.replace('.db', '') }}</td>
+            <td>{{ c.usuario_admin }}</td>
+            <td>{{ c.fecha_alta }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" style="text-align:center; color:var(--texto-muted);">Todavía no hay clientes.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

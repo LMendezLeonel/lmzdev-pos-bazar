@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Usuarios{% endblock %}
+{% block content %}
+<div class="topbar">
+    <h1 style="margin:0">Usuarios</h1>
+    <a href="{{ url_for('usuarios.nuevo') }}" class="btn btn-primario">+ Nuevo usuario</a>
+</div>
+<p style="color:var(--texto-muted); margin-top:-14px; font-size:13.5px;">Dueño, empleados y vendedores que pueden ingresar a este bazar.</p>
+
+<div class="tabla-wrap">
+<table>
+    <thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
+    <tbody>
+        {% for u in usuarios %}
+        <tr>
+            <td><strong>{{ u.nombre }}</strong></td>
+            <td>{{ u.usuario }}</td>
+            <td style="text-transform:capitalize;">{{ u.rol }}</td>
+            <td>
+                {% if u.activo %}
+                    <span class="badge badge-ok">Activo</span>
+                {% else %}
+                    <span class="badge badge-bajo">Inactivo</span>
+                {% endif %}
+            </td>
+            <td style="white-space:nowrap">
+                <a href="{{ url_for('usuarios.editar', usuario_id=u.id) }}" class="btn btn-chico">Editar</a>
+                {% if u.id != session.user_id %}
+                <form method="POST" action="{{ url_for('usuarios.activar', usuario_id=u.id) }}" style="display:inline"
+                      onsubmit="return confirm('{{ '¿Desactivar este usuario? No va a poder iniciar sesión.' if u.activo else '¿Activar este usuario?' }}');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn-chico {{ 'btn-peligro' if u.activo else 'btn-exito' }}">
+                        {{ 'Desactivar' if u.activo else 'Activar' }}
+                    </button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

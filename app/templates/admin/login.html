@@ -1,0 +1,16 @@
+{% extends "base_publico.html" %}
+{% block title %}Admin{% endblock %}
+{% block content %}
+<div class="login-fondo">
+    <div class="login-box">
+        <h1>Panel Admin</h1>
+        <p class="login-subtitulo">Acceso restringido</p>
+        <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label>Clave maestra</label>
+            <input type="password" name="password" required autofocus>
+            <button type="submit" class="btn-primario" style="width:100%; justify-content:center; margin-top:10px;">Ingresar</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

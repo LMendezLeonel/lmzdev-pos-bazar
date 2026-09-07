@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Caja{% endblock %}
+{% block content %}
+<h1>Control de Caja</h1>
+
+{% if not caja %}
+<div class="caja-box">
+    <p style="color:var(--texto-muted)">No hay caja abierta.</p>
+    <form method="POST" action="{{ url_for('caja.abrir') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Monto inicial (efectivo con el que arrancás)</label>
+        <input type="number" step="0.01" name="monto_inicial" value="0" required>
+        <button type="submit" class="btn-primario" style="width:100%;">Abrir caja</button>
+    </form>
+</div>
+{% else %}
+<div class="reportes-resumen" style="max-width:600px;">
+    <div class="card">
+        <h3>{{ caja.fecha_apertura.split(' ')[1][:5] if ' ' in caja.fecha_apertura else caja.fecha_apertura }}</h3>
+        <p>Apertura</p>
+    </div>
+    <div class="card">
+        <h3>${{ "%.2f"|format(caja.monto_inicial) }}</h3>
+        <p>Monto inicial</p>
+    </div>
+</div>
+
+<h3>Resumen de ventas en este turno</h3>
+<div class="tabla-wrap" style="max-width:600px;">
+<table>
+    <thead><tr><th>Medio de pago</th><th>Cantidad</th><th>Total</th></tr></thead>
+    <tbody>
+        {% for r in resumen %}
+        <tr><td>{{ r.medio_pago|capitalize }}</td><td>{{ r.cantidad }}</td><td>${{ "%.2f"|format(r.total) }}</td></tr>
+        {% else %}
+        <tr><td colspan="3" style="text-align:center; color:var(--texto-muted);">Todavía no hay ventas en este turno.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+
+<div class="caja-box" style="margin-left:0;">
+    <form method="POST" action="{{ url_for('caja.cerrar') }}" onsubmit="return confirm('¿Cerrar caja?');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Monto final contado (arqueo)</label>
+        <input type="number" step="0.01" name="monto_final" required>
+        <button type="submit" class="btn-peligro" style="width:100%;">Cerrar caja</button>
+    </form>
+</div>
+{% endif %}
+{% endblock %}

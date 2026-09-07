@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if usuario else 'Nuevo' }} usuario{% endblock %}
+{% block content %}
+<h1>{{ 'Editar' if usuario else 'Nuevo' }} usuario</h1>
+<div class="tabla-wrap" style="padding:24px; max-width:460px;">
+<form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Nombre</label>
+    <input type="text" name="nombre" value="{{ usuario.nombre if usuario else '' }}" required>
+
+    {% if not usuario %}
+    <label>Usuario (para iniciar sesión)</label>
+    <input type="text" name="usuario" required>
+    {% else %}
+    <label>Usuario</label>
+    <input type="text" value="{{ usuario.usuario }}" disabled style="opacity:0.6;">
+    {% endif %}
+
+    <label>Contraseña {{ '(dejar vacío para no cambiarla)' if usuario else '' }}</label>
+    <input type="password" name="password" {{ 'required' if not usuario else '' }}>
+
+    <label>Rol</label>
+    <select name="rol">
+        <option value="dueño" {{ 'selected' if usuario and usuario.rol == 'dueño' else '' }}>Dueño (acceso total)</option>
+        <option value="empleado" {{ 'selected' if usuario and usuario.rol == 'empleado' else '' }}>Empleado (cobra, ve stock)</option>
+        <option value="vendedor" {{ 'selected' if not usuario or usuario.rol == 'vendedor' else '' }}>Vendedor (solo consulta precios/stock)</option>
+    </select>
+
+    <div style="display:flex; gap:10px; margin-top:16px;">
+        <button type="submit" class="btn-primario">Guardar</button>
+        <a href="{{ url_for('usuarios.index') }}" class="btn">Cancelar</a>
+    </div>
+</form>
+</div>
+{% endblock %}

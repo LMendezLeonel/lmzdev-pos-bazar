@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Reportes{% endblock %}
+{% block content %}
+<div class="topbar">
+    <h1 style="margin:0">Reportes de Ventas</h1>
+</div>
+
+<form method="GET" style="display:flex; gap:12px; align-items:flex-end; max-width:500px;">
+    <div style="flex:1;"><label>Desde</label><input type="date" name="desde" value="{{ desde }}" style="margin-bottom:0;"></div>
+    <div style="flex:1;"><label>Hasta</label><input type="date" name="hasta" value="{{ hasta }}" style="margin-bottom:0;"></div>
+    <button type="submit" class="btn-primario">Filtrar</button>
+</form>
+
+<div style="display:flex; gap:10px; margin-top:14px;">
+    <a href="{{ url_for('reportes.exportar_excel', desde=desde, hasta=hasta) }}" class="btn">Exportar Excel</a>
+    <a href="{{ url_for('reportes.exportar_pdf', desde=desde, hasta=hasta) }}" class="btn">Exportar PDF</a>
+</div>
+
+<div class="reportes-resumen">
+    <div class="card"><h3>{{ totales.cantidad_ventas }}</h3><p>Ventas</p></div>
+    <div class="card"><h3>${{ "%.2f"|format(totales.total_vendido) }}</h3><p>Total vendido</p></div>
+    <div class="card"><h3>${{ "%.2f"|format(ganancia) }}</h3><p>Ganancia estimada</p></div>
+</div>
+
+<h3>Productos más vendidos</h3>
+<div class="tabla-wrap">
+<table>
+    <thead><tr><th>Producto</th><th>Cantidad vendida</th><th>Total generado</th></tr></thead>
+    <tbody>
+        {% for p in mas_vendidos %}
+        <tr><td><strong>{{ p.nombre }}</strong></td><td>{{ p.cantidad_total }}</td><td>${{ "%.2f"|format(p.total_generado) }}</td></tr>
+        {% else %}
+        <tr><td colspan="3" style="text-align:center; color:var(--texto-muted);">Sin datos en el período seleccionado.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

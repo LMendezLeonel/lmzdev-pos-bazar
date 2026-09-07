@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Promociones{% endblock %}
+{% block content %}
+<div class="topbar">
+    <h1 style="margin:0">Promociones</h1>
+    <a href="{{ url_for('promociones.nuevo') }}" class="btn btn-primario">+ Nueva promoción</a>
+</div>
+
+<div class="tabla-wrap">
+<table>
+    <thead><tr><th>Nombre</th><th>Tipo</th><th>Valor</th><th>Medio de pago</th><th>Estado</th><th></th></tr></thead>
+    <tbody>
+        {% for p in promos %}
+        <tr>
+            <td><strong>{{ p.nombre }}</strong></td>
+            <td>{{ 'Porcentaje' if p.tipo == 'porcentaje' else 'Monto fijo' }}</td>
+            <td>{{ ('%.0f'|format(p.valor)) + '%' if p.tipo == 'porcentaje' else '$' + ('%.2f'|format(p.valor)) }}</td>
+            <td>{{ p.medio_pago|capitalize if p.medio_pago else 'Cualquiera' }}</td>
+            <td>
+                {% if p.activa %}
+                    <span class="badge badge-ok">Activa</span>
+                {% else %}
+                    <span class="badge badge-bajo">Inactiva</span>
+                {% endif %}
+            </td>
+            <td style="white-space:nowrap">
+                <a href="{{ url_for('promociones.editar', promo_id=p.id) }}" class="btn btn-chico">Editar</a>
+                <form method="POST" action="{{ url_for('promociones.activar', promo_id=p.id) }}" style="display:inline"
+                      onsubmit="return confirm('{{ '¿Desactivar esta promoción?' if p.activa else '¿Activar esta promoción?' }}');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn-chico {{ 'btn-peligro' if p.activa else 'btn-exito' }}">
+                        {{ 'Desactivar' if p.activa else 'Activar' }}
+                    </button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center; color:var(--texto-muted); padding:24px;">Todavía no creaste promociones.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

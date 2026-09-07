@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Control{% endblock %}
+{% block content %}
+<h1>Control</h1>
+<p style="color:var(--texto-muted); margin-top:-10px; font-size:13.5px;">Analíticas del negocio en un vistazo.</p>
+
+<div class="reportes-resumen">
+    <div class="card">
+        <h3>${{ "%.2f"|format(ticket.promedio) }}</h3>
+        <p>Ticket promedio</p>
+    </div>
+    <div class="card">
+        <h3>{{ ticket.cantidad }}</h3>
+        <p>Ventas totales</p>
+    </div>
+    <div class="card">
+        <h3>${{ "%.2f"|format(margen) }}</h3>
+        <p>Margen generado</p>
+    </div>
+    <div class="card">
+        <h3>${{ "%.2f"|format(valor_inventario) }}</h3>
+        <p>Valor del inventario</p>
+    </div>
+</div>
+
+<div class="reportes-resumen">
+    <div class="card">
+        <h3>{{ top_categoria.nombre if top_categoria and top_categoria.nombre else '—' }}</h3>
+        <p>Categoría líder</p>
+    </div>
+    <div class="card">
+        <h3>{{ uso_promos.cantidad }}</h3>
+        <p>Ventas con promoción</p>
+    </div>
+    <div class="card">
+        <h3>${{ "%.2f"|format(uso_promos.total_descontado) }}</h3>
+        <p>Total descontado</p>
+    </div>
+</div>
+
+<div class="chart-card">
+    <h3>Ingresos por día (últimos registros)</h3>
+    <canvas id="grafico-ingresos" height="80"></canvas>
+</div>
+
+<div class="chart-card">
+    <h3>Ventas por hora del día</h3>
+    <canvas id="grafico-horas" height="80"></canvas>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script>
+function colorAccent() {
+    return getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+}
+function colorTexto() {
+    return getComputedStyle(document.documentElement).getPropertyValue('--texto-muted').trim();
+}
+function colorBorde() {
+    return getComputedStyle(document.documentElement).getPropertyValue('--border').trim();
+}
+
+const ctxIngresos = document.getElementById('grafico-ingresos');
+new Chart(ctxIngresos, {
+    type: 'line',
+    data: {
+        labels: [{% for d in ingresos_dia %}"{{ d.dia[5:] }}",{% endfor %}],
+        datasets: [{
+            label: 'Ingresos',
+            data: [{% for d in ingresos_dia %}{{ d.total }},{% endfor %}],
+            borderColor: colorAccent(),
+            backgroundColor: colorAccent() + '33',
+            fill: true,
+            tension: 0.35,
+            pointRadius: 3
+        }]
+    },
+    options: {
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { grid: { color: colorBorde() }, ticks: { color: colorTexto() } },
+            y: { grid: { color: colorBorde() }, ticks: { color: colorTexto() } }
+        }
+    }
+});
+
+const ctxHoras = document.getElementById('grafico-horas');
+new Chart(ctxHoras, {
+    type: 'bar',
+    data: {
+        labels: [{% for h in range(24) %}"{{ h }}h",{% endfor %}],
+        datasets: [{
+            label: 'Ventas',
+            data: {{ datos_hora }},
+            backgroundColor: colorAccent(),
+            borderRadius: 4
+        }]
+    },
+    options: {
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { grid: { display: false }, ticks: { color: colorTexto() } },
+            y: { grid: { color: colorBorde() }, ticks: { color: colorTexto() } }
+        }
+    }
+});
+</script>
+{% endblock %}

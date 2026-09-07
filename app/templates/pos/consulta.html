@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Consulta de precios{% endblock %}
+{% block content %}
+<div class="topbar" style="padding-bottom:6px;">
+    <div>
+        <h1 style="margin:0">Lista de precios y stock</h1>
+        <p style="color:var(--texto-muted); margin:2px 0 0; font-size:13.5px;">Buscá por nombre o código, u ordená por precio.</p>
+    </div>
+    <div style="margin-left:auto; display:flex; gap:8px;">
+        <a href="{{ url_for('pos.lista_precios_excel') }}" class="btn btn-chico">Descargar Excel</a>
+        <a href="{{ url_for('pos.lista_precios_pdf') }}" class="btn btn-chico">Descargar PDF</a>
+    </div>
+</div>
+
+<div class="tabla-wrap" style="padding:14px 16px; margin-bottom:0;">
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">
+        <input type="text" id="input-buscar" autofocus placeholder="Buscar por nombre o código..." style="flex:1; min-width:220px; margin:0;">
+        <button id="btn-orden-asc" class="btn btn-chico">Precio: menor a mayor</button>
+        <button id="btn-orden-desc" class="btn btn-chico">Precio: mayor a menor</button>
+        <button id="btn-orden-reset" class="btn btn-chico">Sin orden</button>
+    </div>
+    <div id="filtros-categoria" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+</div>
+
+<div class="tabla-wrap">
+<table>
+    <thead>
+        <tr><th>Producto</th><th>Código</th><th>Precio</th><th>Stock</th></tr>
+    </thead>
+    <tbody id="tabla-body">
+        <tr><td colspan="4" style="text-align:center; color:var(--texto-muted); padding:20px;">Cargando...</td></tr>
+    </tbody>
+</table>
+</div>
+
+<script>
+let productos = [];
+let ordenActual = null; // 'asc' | 'desc' | null
+let categoriaActiva = "";
+
+const tbody = document.getElementById("tabla-body");
+const inputBuscar = document.getElementById("input-buscar");
+const filtrosCategoria = document.getElementById("filtros-categoria");
+
+fetch("{{ url_for('pos.productos_todos') }}").then(r => r.json()).then(data => {
+    productos = data;
+    construirFiltrosCategoria();
+    render();
+});
+
+function construirFiltrosCategoria() {
+    const categorias = [...new Set(productos.map(p => p.categoria_nombre).filter(Boolean))].sort();
+    filtrosCategoria.innerHTML = "";
+
+    const btnTodas = document.createElement("button");
+    btnTodas.className = "filtro-categoria activo";
+    btnTodas.textContent = "Todas";
+    btnTodas.dataset.categoria = "";
+    btnTodas.addEventListener("click", () => seleccionarCategoria("", btnTodas));
+    filtrosCategoria.appendChild(btnTodas);
+
+    categorias.forEach(cat => {
+        const btn = document.createElement("button");
+        btn.className = "filtro-categoria";
+        btn.textContent = cat;
+        btn.dataset.categoria = cat.toLowerCase();
+        btn.addEventListener("click", () => seleccionarCategoria(cat.toLowerCase(), btn));
+        filtrosCategoria.appendChild(btn);
+    });
+}
+
+function seleccionarCategoria(categoria, btnClickeado) {
+    document.querySelectorAll(".filtro-categoria").forEach(b => b.classList.remove("activo"));
+    btnClickeado.classList.add("activo");
+    categoriaActiva = categoria;
+    render();
+}
+
+function render() {
+    const query = inputBuscar.value.trim().toLowerCase();
+    let lista = productos.filter(p => {
+        const coincideTexto = !query || p.nombre.toLowerCase().includes(query) || (p.codigo_barras || "").includes(query);
+        const coincideCategoria = !categoriaActiva || (p.categoria_nombre || "").toLowerCase() === categoriaActiva;
+        return coincideTexto && coincideCategoria;
+    });
+
+    if (ordenActual === "asc") lista = [...lista].sort((a, b) => a.precio_venta - b.precio_venta);
+    if (ordenActual === "desc") lista = [...lista].sort((a, b) => b.precio_venta - a.precio_venta);
+
+    tbody.innerHTML = "";
+    if (lista.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--texto-muted); padding:20px;">Sin resultados.</td></tr>';
+        return;
+    }
+
+    lista.forEach(p => {
+        const tr = document.createElement("tr");
+        const badge = p.stock_actual > 0
+            ? `<span class="badge badge-ok">${p.stock_actual}</span>`
+            : `<span class="badge badge-bajo">Sin stock</span>`;
+        tr.innerHTML = `
+            <td><strong>${p.nombre}</strong></td>
+            <td>${p.codigo_barras || '—'}</td>
+            <td>$${p.precio_venta.toFixed(2)}</td>
+            <td>${badge}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+inputBuscar.addEventListener("input", render);
+document.getElementById("btn-orden-asc").addEventListener("click", () => { ordenActual = "asc"; render(); });
+document.getElementById("btn-orden-desc").addEventListener("click", () => { ordenActual = "desc"; render(); });
+document.getElementById("btn-orden-reset").addEventListener("click", () => { ordenActual = null; render(); });
+</script>
+{% endblock %}

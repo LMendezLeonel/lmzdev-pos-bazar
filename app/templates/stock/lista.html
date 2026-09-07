@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Stock{% endblock %}
+{% block content %}
+<div class="topbar">
+    <h1 style="margin:0">Stock</h1>
+    {% if session.rol == 'dueño' %}
+    <a href="{{ url_for('stock.nuevo') }}" class="btn btn-primario">+ Nuevo producto</a>
+    <a href="{{ url_for('stock.categorias') }}" class="btn">Categorías</a>
+    {% endif %}
+</div>
+
+<div class="tabla-wrap" style="padding:14px 16px; margin-bottom:0;">
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">
+        <input type="text" id="input-filtro" placeholder="Buscar por nombre o código..." style="flex:1; min-width:220px; margin:0;">
+        <button id="btn-orden-asc" class="btn btn-chico">Precio: menor a mayor</button>
+        <button id="btn-orden-desc" class="btn btn-chico">Precio: mayor a menor</button>
+        <button id="btn-orden-reset" class="btn btn-chico">Sin orden</button>
+    </div>
+    <div id="filtros-categoria" style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="filtro-categoria activo" data-categoria="">Todas</button>
+        {% for cat in categorias_presentes %}
+        <button class="filtro-categoria" data-categoria="{{ cat|lower }}">{{ cat }}</button>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="tabla-wrap">
+<table>
+    <thead>
+        <tr>
+            <th>Producto</th><th>Categoría</th><th>Código</th>
+            <th>Precio</th><th>Stock</th><th>Estado</th>
+            {% if session.rol == 'dueño' %}<th></th>{% endif %}
+        </tr>
+    </thead>
+    <tbody id="tabla-body">
+        {% for p in productos %}
+        <tr class="{{ 'stock-bajo' if p.alertas_activas and p.stock_actual <= p.stock_minimo else '' }}"
+            data-nombre="{{ p.nombre|lower }}" data-codigo="{{ p.codigo_barras or '' }}" data-precio="{{ p.precio_venta }}"
+            data-categoria="{{ (p.categoria_nombre or '')|lower }}">
+            <td><strong>{{ p.nombre }}</strong></td>
+            <td>{{ p.categoria_nombre or '—' }}</td>
+            <td>{{ p.codigo_barras or '—' }}</td>
+            <td>${{ "%.2f"|format(p.precio_venta) }}</td>
+            <td>{{ p.stock_actual }}</td>
+            <td>
+                {% if p.alertas_activas and p.stock_actual <= p.stock_minimo %}
+                    <span class="badge badge-bajo">Stock bajo</span>
+                {% else %}
+                    <span class="badge badge-ok">Disponible</span>
+                {% endif %}
+            </td>
+            {% if session.rol == 'dueño' %}
+            <td style="white-space:nowrap">
+                <a href="{{ url_for('stock.editar', producto_id=p.id) }}" class="btn btn-chico">Editar</a>
+                {% if p.codigo_barras %}
+                <a href="{{ url_for('stock.etiqueta', producto_id=p.id) }}" class="btn btn-chico" target="_blank">Etiqueta</a>
+                {% endif %}
+                <form method="POST" action="{{ url_for('stock.eliminar', producto_id=p.id) }}" style="display:inline"
+                      onsubmit="return confirm('¿Eliminar {{ p.nombre }}?');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn-peligro btn-chico">Eliminar</button>
+                </form>
+            </td>
+            {% endif %}
+        </tr>
+        {% else %}
+        <tr><td colspan="7" style="text-align:center; color:var(--texto-muted); padding:24px;">Todavía no cargaste productos.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+
+<script>
+const inputFiltro = document.getElementById("input-filtro");
+const tabla = document.getElementById("tabla-body");
+const filas = Array.from(tabla.querySelectorAll("tr[data-nombre]"));
+const botonesCategoria = document.querySelectorAll(".filtro-categoria");
+let categoriaActiva = "";
+
+function aplicarFiltro() {
+    const query = inputFiltro.value.trim().toLowerCase();
+    filas.forEach(fila => {
+        const coincideTexto = !query || fila.dataset.nombre.includes(query) || fila.dataset.codigo.includes(query);
+        const coincideCategoria = !categoriaActiva || fila.dataset.categoria === categoriaActiva;
+        fila.style.display = (coincideTexto && coincideCategoria) ? "" : "none";
+    });
+}
+
+botonesCategoria.forEach(btn => {
+    btn.addEventListener("click", () => {
+        botonesCategoria.forEach(b => b.classList.remove("activo"));
+        btn.classList.add("activo");
+        categoriaActiva = btn.dataset.categoria;
+        aplicarFiltro();
+    });
+});
+
+function ordenarPor(direccion) {
+    const ordenadas = [...filas].sort((a, b) => {
+        const pa = parseFloat(a.dataset.precio), pb = parseFloat(b.dataset.precio);
+        return direccion === "asc" ? pa - pb : pb - pa;
+    });
+    ordenadas.forEach(fila => tabla.appendChild(fila));
+}
+
+function resetOrden() {
+    filas.forEach(fila => tabla.appendChild(fila));
+}
+
+inputFiltro.addEventListener("input", aplicarFiltro);
+document.getElementById("btn-orden-asc").addEventListener("click", () => ordenarPor("asc"));
+document.getElementById("btn-orden-desc").addEventListener("click", () => ordenarPor("desc"));
+document.getElementById("btn-orden-reset").addEventListener("click", resetOrden);
+</script>
+{% endblock %}

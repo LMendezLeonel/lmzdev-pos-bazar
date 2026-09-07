@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if producto else 'Nuevo' }} producto{% endblock %}
+{% block content %}
+<h1>{{ 'Editar' if producto else 'Nuevo' }} producto</h1>
+<div class="tabla-wrap" style="padding:24px; max-width:520px;">
+<form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Nombre</label>
+    <input type="text" name="nombre" value="{{ producto.nombre if producto else '' }}" required>
+
+    <label>Código de barras</label>
+    <div style="display:flex; gap:8px;">
+        <input type="text" id="input-codigo-barras" name="codigo_barras" value="{{ producto.codigo_barras if producto else '' }}" style="flex:1; margin-bottom:0;">
+        <button type="button" id="btn-generar-codigo" class="btn" style="flex-shrink:0;">Generar código</button>
+    </div>
+    <p style="font-size:11.5px; color:var(--texto-muted); margin:4px 0 12px;">
+        Usá esto si el producto no tiene código de fábrica (ej: productos sin marca). Genera un código interno único.
+    </p>
+
+    <label>Categoría</label>
+    <select name="categoria_id">
+        <option value="">— Sin categoría —</option>
+        {% for c in categorias %}
+        <option value="{{ c.id }}" {{ 'selected' if producto and producto.categoria_id == c.id else '' }}>
+            {{ c.nombre }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <label>Precio de venta</label>
+    <input type="number" step="0.01" name="precio_venta" value="{{ producto.precio_venta if producto else 0 }}" required>
+
+    <label>Precio de costo</label>
+    <input type="number" step="0.01" name="precio_costo" value="{{ producto.precio_costo if producto else 0 }}">
+
+    <label>Stock actual</label>
+    <input type="number" name="stock_actual" value="{{ producto.stock_actual if producto else 0 }}" required>
+
+    <label>Stock mínimo (para alerta)</label>
+    <input type="number" name="stock_minimo" value="{{ producto.stock_minimo if producto else 0 }}">
+
+    <div style="display:flex; gap:10px; margin-top:16px;">
+        <button type="submit" class="btn-primario">Guardar</button>
+        <a href="{{ url_for('stock.index') }}" class="btn">Cancelar</a>
+    </div>
+</form>
+</div>
+
+<script>
+document.getElementById("btn-generar-codigo").addEventListener("click", () => {
+    fetch("{{ url_for('stock.generar_codigo') }}")
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById("input-codigo-barras").value = data.codigo;
+        });
+});
+</script>
+{% endblock %}

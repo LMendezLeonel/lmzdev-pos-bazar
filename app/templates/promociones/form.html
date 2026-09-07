@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if promo else 'Nueva' }} promoción{% endblock %}
+{% block content %}
+<h1>{{ 'Editar' if promo else 'Nueva' }} promoción</h1>
+<div class="tabla-wrap" style="padding:24px; max-width:480px;">
+<form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Nombre</label>
+    <input type="text" name="nombre" value="{{ promo.nombre if promo else '' }}" placeholder="Ej: Descuento en efectivo" required>
+
+    <label>Tipo</label>
+    <select name="tipo" id="select-tipo">
+        <option value="porcentaje" {{ 'selected' if promo and promo.tipo == 'porcentaje' else '' }}>Porcentaje (%)</option>
+        <option value="monto_fijo" {{ 'selected' if promo and promo.tipo == 'monto_fijo' else '' }}>Monto fijo ($)</option>
+    </select>
+
+    <label id="label-valor">Valor</label>
+    <input type="number" step="0.01" name="valor" value="{{ promo.valor if promo else '' }}" required>
+
+    <label>Medio de pago (opcional)</label>
+    <select name="medio_pago">
+        <option value="" {{ 'selected' if not promo or not promo.medio_pago else '' }}>Cualquier medio de pago</option>
+        <option value="efectivo" {{ 'selected' if promo and promo.medio_pago == 'efectivo' else '' }}>Solo efectivo</option>
+        <option value="tarjeta" {{ 'selected' if promo and promo.medio_pago == 'tarjeta' else '' }}>Solo tarjeta</option>
+        <option value="transferencia" {{ 'selected' if promo and promo.medio_pago == 'transferencia' else '' }}>Solo transferencia</option>
+    </select>
+
+    <div style="display:flex; gap:10px; margin-top:16px;">
+        <button type="submit" class="btn-primario">Guardar</button>
+        <a href="{{ url_for('promociones.index') }}" class="btn">Cancelar</a>
+    </div>
+</form>
+</div>
+<script>
+const selectTipo = document.getElementById("select-tipo");
+const labelValor = document.getElementById("label-valor");
+function actualizarLabel() {
+    labelValor.textContent = selectTipo.value === "porcentaje" ? "Valor (%)" : "Valor ($)";
+}
+selectTipo.addEventListener("change", actualizarLabel);
+actualizarLabel();
+</script>
+{% endblock %}

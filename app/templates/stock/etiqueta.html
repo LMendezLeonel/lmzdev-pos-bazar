@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Etiqueta - {{ producto.nombre }}</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/JsBarcode/3.11.6/JsBarcode.all.min.js"></script>
+<style>
+    /*
+    TAMAÑO DE ETIQUETA: ajustá estos dos valores (width/height del @page y del .etiqueta)
+    al tamaño real del rollo que uses en la impresora. Por defecto: 40mm x 30mm.
+    */
+    @page { size: 40mm 30mm; margin: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; }
+    .etiqueta {
+        width: 40mm; height: 30mm;
+        padding: 1.5mm;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        text-align: center;
+        page-break-after: always;
+    }
+    .etiqueta .nombre { font-size: 8px; font-weight: bold; line-height: 1.1; max-height: 16px; overflow: hidden; }
+    .etiqueta .precio { font-size: 13px; font-weight: bold; margin-top: 1mm; }
+    .etiqueta svg { width: 100%; height: 12mm; margin-top: 0.5mm; }
+
+    .controles { padding: 20px; text-align: center; }
+    .controles button {
+        padding: 10px 20px; font-size: 14px; cursor: pointer;
+        background: #d9a24d; border: none; border-radius: 6px; font-weight: bold;
+    }
+    @media print { .controles { display: none; } }
+</style>
+</head>
+<body>
+    <div class="controles">
+        <button onclick="window.print()">Imprimir etiqueta</button>
+        <p style="margin-top:10px; font-size:12px; color:#666;">
+            Se abre el diálogo de impresión del navegador — elegí la impresora de etiquetas ahí.
+        </p>
+    </div>
+
+    <div class="etiqueta">
+        <div class="nombre">{{ producto.nombre }}</div>
+        <svg id="barcode"></svg>
+        <div class="precio">${{ "%.2f"|format(producto.precio_venta) }}</div>
+    </div>
+
+    <script>
+        JsBarcode("#barcode", "{{ producto.codigo_barras }}", {
+            format: "CODE128",
+            displayValue: true,
+            fontSize: 10,
+            height: 30,
+            margin: 0
+        });
+    </script>
+</body>
+</html>
