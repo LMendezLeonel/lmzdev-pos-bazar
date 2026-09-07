@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Ticket #{{ "%06d"|format(venta.id) }}</title>
+<style>
+    /*
+    Ancho pensado para comanderas térmicas de 80mm (como la Fukun XP-80C).
+    Si tu impresora es de 58mm, cambiá el 80mm de acá abajo por 58mm.
+    */
+    @page { size: 80mm auto; margin: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+        width: 80mm;
+        padding: 3mm;
+        color: #000;
+    }
+    .centrado { text-align: center; }
+    .negrita { font-weight: bold; }
+    .linea-punteada { border-top: 1px dashed #000; margin: 2mm 0; }
+    .fila { display: flex; justify-content: space-between; }
+    .item { margin-bottom: 1.5mm; }
+    .item-detalle { font-size: 10px; color: #333; display: flex; justify-content: space-between; }
+    .titulo-negocio { font-size: 15px; }
+    .footer { margin-top: 3mm; }
+
+    .controles { padding: 16px; text-align: center; }
+    .controles button {
+        padding: 10px 22px; font-size: 14px; cursor: pointer;
+        background: #d9a24d; border: none; border-radius: 6px; font-weight: bold;
+    }
+    @media print { .controles { display: none; } }
+</style>
+</head>
+<body>
+    <div class="controles">
+        <button onclick="window.print()">Imprimir ticket</button>
+    </div>
+
+    <div class="centrado negrita titulo-negocio">{{ session.nombre_bazar }}</div>
+    <div class="centrado">A CONSUMIDOR FINAL</div>
+    <div class="linea-punteada"></div>
+
+    <div class="fila"><span>Ticket Nro.</span><span>{{ "%06d"|format(venta.id) }}</span></div>
+    <div class="fila"><span>Fecha</span><span>{{ venta.fecha }}</span></div>
+    <div class="fila"><span>Cajero</span><span>{{ venta.cajero or '-' }}</span></div>
+    <div class="linea-punteada"></div>
+
+    {% for item in items %}
+    <div class="item">
+        <div>{{ item.producto_nombre }}</div>
+        <div class="item-detalle">
+            <span>{{ item.cantidad }} x ${{ "%.2f"|format(item.precio_unitario) }}</span>
+            <span>${{ "%.2f"|format(item.subtotal) }}</span>
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="linea-punteada"></div>
+
+    {% if venta.descuento and venta.descuento > 0 %}
+    <div class="fila"><span>Subtotal</span><span>${{ "%.2f"|format(venta.subtotal) }}</span></div>
+    <div class="fila"><span>Descuento</span><span>-${{ "%.2f"|format(venta.descuento) }}</span></div>
+    {% endif %}
+    <div class="fila negrita" style="font-size:14px;"><span>TOTAL</span><span>${{ "%.2f"|format(venta.total) }}</span></div>
+
+    <div class="linea-punteada"></div>
+    <div class="fila"><span>Medio de pago</span><span>{{ venta.medio_pago|capitalize }}</span></div>
+    {% if venta.monto_recibido %}
+    <div class="fila"><span>Recibido</span><span>${{ "%.2f"|format(venta.monto_recibido) }}</span></div>
+    <div class="fila"><span>Vuelto</span><span>${{ "%.2f"|format(venta.vuelto) }}</span></div>
+    {% endif %}
+
+    <div class="footer centrado">
+        <div class="linea-punteada"></div>
+        <div>¡Gracias por su compra!</div>
+    </div>
+
+    <script>
+        // Descomentá la siguiente línea si querés que imprima automático al abrir la página,
+        // sin tener que apretar el botón:
+        // window.onload = () => window.print();
+    </script>
+</body>
+</html>

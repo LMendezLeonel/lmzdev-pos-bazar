@@ -275,3 +275,30 @@ def lista_precios_pdf():
     productos = _productos_para_lista_precios()
     buffer = exportar.pdf_lista_precios(productos)
     return send_file(buffer, as_attachment=True, download_name="lista_precios.pdf", mimetype="application/pdf")
+
+
+@bp.route("/ticket/<int:venta_id>")
+@requiere_rol("dueño", "empleado")
+def ticket(venta_id):
+    db = get_client_db()
+
+    venta = db.execute(
+        """SELECT v.*, u.nombre AS cajero
+           FROM ventas v
+           LEFT JOIN usuarios u ON v.usuario_id = u.id
+           WHERE v.id = ?""",
+        (venta_id,)
+    ).fetchone()
+
+    if venta is None:
+        return "Venta no encontrada", 404
+
+    items = db.execute(
+        """SELECT dv.*, p.nombre AS producto_nombre
+           FROM detalle_venta dv
+           JOIN productos p ON dv.producto_id = p.id
+           WHERE dv.venta_id = ?""",
+        (venta_id,)
+    ).fetchall()
+
+    return render_template("pos/ticket.html", venta=venta, items=items)
