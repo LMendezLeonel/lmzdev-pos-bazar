@@ -7,21 +7,22 @@
 <style>
     /*
     TAMAÑO DE ETIQUETA: ajustá estos dos valores (width/height del @page y del .etiqueta)
-    al tamaño real del rollo que uses en la impresora. Por defecto: 40mm x 30mm.
+    al tamaño real del rollo que uses en la impresora. Configurado para: 55mm x 44mm.
     */
-    @page { size: 40mm 30mm; margin: 0; }
+    @page { size: 55mm 44mm; margin: 0; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Arial, sans-serif; }
     .etiqueta {
-        width: 40mm; height: 30mm;
-        padding: 1.5mm;
+        width: 55mm; height: 44mm;
+        padding: 2mm;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         text-align: center;
         page-break-after: always;
     }
-    .etiqueta .nombre { font-size: 8px; font-weight: bold; line-height: 1.1; max-height: 16px; overflow: hidden; }
-    .etiqueta .precio { font-size: 13px; font-weight: bold; margin-top: 1mm; }
-    .etiqueta svg { width: 100%; height: 12mm; margin-top: 0.5mm; }
+    .etiqueta .negocio { font-size: 8px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+    .etiqueta .nombre { font-size: 11px; font-weight: bold; line-height: 1.15; max-height: 26px; overflow: hidden; margin-top: 1mm; }
+    .etiqueta .precio { font-size: 18px; font-weight: bold; margin-top: 1.5mm; }
+    .etiqueta svg { width: 100%; height: 16mm; margin-top: 1mm; }
 
     .controles { padding: 20px; text-align: center; }
     .controles button {
@@ -35,11 +36,12 @@
     <div class="controles">
         <button onclick="window.print()">Imprimir etiqueta</button>
         <p style="margin-top:10px; font-size:12px; color:#666;">
-            Se abre el diálogo de impresión del navegador — elegí la impresora de etiquetas ahí.
+            Se abre el diálogo de impresión del navegador — elegí la Xprinter XP-410B ahí.
         </p>
     </div>
 
     <div class="etiqueta">
+        <div class="negocio">{{ session.nombre_bazar }}</div>
         <div class="nombre">{{ producto.nombre }}</div>
         <svg id="barcode"></svg>
         <div class="precio">${{ "%.2f"|format(producto.precio_venta) }}</div>
@@ -49,8 +51,8 @@
         JsBarcode("#barcode", "{{ producto.codigo_barras }}", {
             format: "CODE128",
             displayValue: true,
-            fontSize: 10,
-            height: 30,
+            fontSize: 11,
+            height: 34,
             margin: 0
         });
     </script>
