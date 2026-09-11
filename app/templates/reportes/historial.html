@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Historial de ventas{% endblock %}
+{% block content %}
+<h1>Historial de ventas</h1>
+
+<form method="GET" style="display:flex; gap:12px; align-items:flex-end; max-width:500px;">
+    <div style="flex:1;"><label>Desde</label><input type="date" name="desde" value="{{ desde }}" style="margin-bottom:0;"></div>
+    <div style="flex:1;"><label>Hasta</label><input type="date" name="hasta" value="{{ hasta }}" style="margin-bottom:0;"></div>
+    <button type="submit" class="btn-primario">Filtrar</button>
+</form>
+
+<div class="tabla-wrap">
+<table>
+    <thead>
+        <tr><th>N° Ticket</th><th>Fecha</th><th>Cajero</th><th>Medio de pago</th><th>Total</th><th></th></tr>
+    </thead>
+    <tbody>
+        {% for v in ventas %}
+        <tr>
+            <td>#{{ "%06d"|format(v.id) }}</td>
+            <td>{{ v.fecha }}</td>
+            <td>{{ v.cajero or '-' }}</td>
+            <td style="text-transform:capitalize;">{{ v.medio_pago }}</td>
+            <td><strong>${{ "%.2f"|format(v.total) }}</strong></td>
+            <td>
+                <a href="{{ url_for('pos.ticket', venta_id=v.id) }}" target="_blank" class="btn btn-chico">Ver ticket</a>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center; color:var(--texto-muted); padding:24px;">No hay ventas registradas en este período.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

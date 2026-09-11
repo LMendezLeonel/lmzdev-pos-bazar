@@ -132,3 +132,32 @@ def _obtener_datos_stock():
     ).fetchone()
 
     return productos, totales
+
+
+@bp.route("/historial")
+@requiere_rol("dueño")
+def historial():
+    db = get_client_db()
+
+    desde = request.args.get("desde", "")
+    hasta = request.args.get("hasta", "")
+
+    filtro_fecha = ""
+    params = []
+    if desde:
+        filtro_fecha += " AND date(v.fecha) >= date(?)"
+        params.append(desde)
+    if hasta:
+        filtro_fecha += " AND date(v.fecha) <= date(?)"
+        params.append(hasta)
+
+    ventas = db.execute(
+        f"""SELECT v.*, u.nombre AS cajero
+            FROM ventas v
+            LEFT JOIN usuarios u ON v.usuario_id = u.id
+            WHERE 1=1 {filtro_fecha}
+            ORDER BY v.fecha DESC""",
+        params
+    ).fetchall()
+
+    return render_template("reportes/historial.html", ventas=ventas, desde=desde, hasta=hasta)

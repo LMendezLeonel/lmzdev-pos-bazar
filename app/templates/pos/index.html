@@ -72,7 +72,7 @@
     <div class="modal-contenido">
         <h2>Venta registrada</h2>
         <div id="ticket-detalle"></div>
-        <a id="btn-imprimir-ticket" href="#" target="_blank" class="btn btn-primario" style="width:100%; margin-top:14px; justify-content:center; text-decoration:none;">Imprimir ticket</a>
+        <a id="btn-imprimir-ticket" href="#" target="_blank" class="btn btn-primario" style="width:100%; margin-top:14px; justify-content:center; text-decoration:none;">Imprimir ticket (Enter / Espacio)</a>
         <button id="btn-cerrar-modal" class="btn" style="width:100%; margin-top:8px; justify-content:center;">Cerrar (Esc)</button>
     </div>
 </div>
@@ -271,6 +271,11 @@ document.getElementById("btn-nueva-venta").addEventListener("click", () => {
 });
 
 document.addEventListener("keydown", (e) => {
+    if (!modalTicket.classList.contains("oculto") && (e.key === "Enter" || e.key === " ")) {
+        e.preventDefault();
+        document.getElementById("btn-imprimir-ticket").click();
+        return;
+    }
     if (e.key === "F1") { e.preventDefault(); cobrar(); }
     else if (e.key === "F2") { e.preventDefault(); post("{{ url_for('pos.carrito_vaciar') }}").then(({ data }) => renderCarrito(data.carrito, data.total)); }
     else if (e.key === "F3") { e.preventDefault(); inputBuscar.focus(); }

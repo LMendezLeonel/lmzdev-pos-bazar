@@ -15,6 +15,7 @@
         <button id="btn-orden-asc" class="btn btn-chico">Precio: menor a mayor</button>
         <button id="btn-orden-desc" class="btn btn-chico">Precio: mayor a menor</button>
         <button id="btn-orden-reset" class="btn btn-chico">Sin orden</button>
+        <button id="btn-stock-bajo" class="filtro-categoria">Solo stock bajo</button>
     </div>
     <div id="filtros-categoria" style="display:flex; gap:8px; flex-wrap:wrap;">
         <button class="filtro-categoria activo" data-categoria="">Todas</button>
@@ -76,16 +77,25 @@ const inputFiltro = document.getElementById("input-filtro");
 const tabla = document.getElementById("tabla-body");
 const filas = Array.from(tabla.querySelectorAll("tr[data-nombre]"));
 const botonesCategoria = document.querySelectorAll(".filtro-categoria");
+const btnStockBajo = document.getElementById("btn-stock-bajo");
 let categoriaActiva = "";
+let soloStockBajo = false;
 
 function aplicarFiltro() {
     const query = inputFiltro.value.trim().toLowerCase();
     filas.forEach(fila => {
         const coincideTexto = !query || fila.dataset.nombre.includes(query) || fila.dataset.codigo.includes(query);
         const coincideCategoria = !categoriaActiva || fila.dataset.categoria === categoriaActiva;
-        fila.style.display = (coincideTexto && coincideCategoria) ? "" : "none";
+        const coincideStockBajo = !soloStockBajo || fila.classList.contains("stock-bajo");
+        fila.style.display = (coincideTexto && coincideCategoria && coincideStockBajo) ? "" : "none";
     });
 }
+
+btnStockBajo.addEventListener("click", () => {
+    soloStockBajo = !soloStockBajo;
+    btnStockBajo.classList.toggle("activo", soloStockBajo);
+    aplicarFiltro();
+});
 
 botonesCategoria.forEach(btn => {
     btn.addEventListener("click", () => {
