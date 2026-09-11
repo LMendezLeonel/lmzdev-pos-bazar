@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Etiqueta - {{ producto.nombre }}</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/JsBarcode/3.11.6/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.4/dist/JsBarcode.all.min.js"></script>
 <style>
     /*
     TAMAÑO DE ETIQUETA: ajustá estos dos valores (width/height del @page y del .etiqueta)
@@ -44,17 +44,29 @@
         <div class="negocio">{{ session.nombre_bazar }}</div>
         <div class="nombre">{{ producto.nombre }}</div>
         <svg id="barcode"></svg>
+        <div id="codigo-texto" style="font-size:9px; color:#555; display:none;"></div>
         <div class="precio">${{ "%.2f"|format(producto.precio_venta) }}</div>
     </div>
 
     <script>
-        JsBarcode("#barcode", "{{ producto.codigo_barras }}", {
-            format: "CODE128",
-            displayValue: true,
-            fontSize: 11,
-            height: 34,
-            margin: 0
-        });
+        try {
+            if (typeof JsBarcode === "undefined") {
+                throw new Error("La librería JsBarcode no cargó (revisá tu conexión a internet)");
+            }
+            JsBarcode("#barcode", "{{ producto.codigo_barras }}", {
+                format: "CODE128",
+                displayValue: true,
+                fontSize: 11,
+                height: 34,
+                margin: 0
+            });
+        } catch (error) {
+            console.error("Error generando el código de barras:", error);
+            document.getElementById("barcode").style.display = "none";
+            const textoCodigo = document.getElementById("codigo-texto");
+            textoCodigo.textContent = "Código: {{ producto.codigo_barras }} (error: " + error.message + ")";
+            textoCodigo.style.display = "block";
+        }
     </script>
 </body>
 </html>
