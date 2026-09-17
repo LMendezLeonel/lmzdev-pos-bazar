@@ -199,11 +199,6 @@ html[data-sidebar="colapsado"] .toggle-tema { justify-content: center; }
 html[data-sidebar="colapsado"] .sidebar-usuario { justify-content: center; padding-bottom: 10px; }
 html[data-sidebar="colapsado"] .salir-link { justify-content: center; }
 
-@media (max-width: 900px) {
-    html[data-sidebar="colapsado"] .sidebar { width: 100%; }
-    html[data-sidebar="colapsado"] .contenido.con-sidebar { margin-left: 0; }
-}
-
 /* ============================================
    BOTONES — con borde siempre, animación, colores diferenciados
    ============================================ */
@@ -453,6 +448,69 @@ html[data-tema="claro"] .login-fondo {
    ============================================ */
 @media (max-width: 900px) {
     .pos-layout { grid-template-columns: 1fr; }
-    .sidebar { width: 100%; height: auto; position: relative; flex-direction: row; flex-wrap: wrap; }
-    .contenido.con-sidebar { margin-left: 0; }
+
+    /* Barra superior móvil con hamburguesa, fija arriba */
+    .barra-movil {
+        display: flex; align-items: center; gap: 12px;
+        position: fixed; top: 0; left: 0; right: 0; height: 56px;
+        background: var(--sidebar-bg); border-bottom: 1px solid var(--sidebar-borde);
+        padding: 0 14px; z-index: 40;
+    }
+    .btn-hamburguesa {
+        background: transparent; border: none; color: #fff; padding: 6px;
+        display: flex; align-items: center; justify-content: center;
+    }
+    .btn-hamburguesa svg { width: 22px; height: 22px; }
+    .barra-movil-negocio { color: #fff; font-weight: 700; font-family: "Manrope", sans-serif; font-size: 14px; }
+
+    /* El sidebar se convierte en panel deslizable, oculto por defecto */
+    .sidebar {
+        position: fixed; top: 0; left: 0; bottom: 0; width: 260px;
+        transform: translateX(-100%);
+        transition: transform 0.2s ease;
+        z-index: 60;
+    }
+    .sidebar.sidebar-movil-abierta { transform: translateX(0); }
+
+    /* Fondo oscuro detrás del panel, para cerrar tocando afuera */
+    .fondo-menu-movil {
+        display: none;
+        position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 50;
+    }
+    .fondo-menu-movil.visible { display: block; }
+
+    /* El botón de colapsar (pensado para desktop) no hace falta en celular */
+    .toggle-sidebar-btn { display: none; }
+
+    /* El contenido baja para no quedar tapado por la barra fija, y ocupa todo el ancho */
+    .contenido.con-sidebar { margin-left: 0; padding-top: 72px; }
+}
+
+@media (max-width: 600px) {
+    .contenido { padding: 72px 14px 20px; }
+    .reportes-resumen { flex-direction: column; }
+    .topbar { flex-direction: column; align-items: flex-start; gap: 10px; }
+
+    /* Tablas normales: en vez de romper el layout, permiten scroll horizontal */
+    .tabla-wrap { overflow-x: auto; }
+
+    /* La lista de precios del Vendedor se convierte en tarjetas apiladas, más fácil de leer */
+    table.tabla-responsive thead { display: none; }
+    table.tabla-responsive, table.tabla-responsive tbody, table.tabla-responsive tr, table.tabla-responsive td {
+        display: block; width: 100%;
+    }
+    table.tabla-responsive tr {
+        border-bottom: 1px solid var(--border); padding: 10px 0;
+    }
+    table.tabla-responsive tr:last-child { border-bottom: none; }
+    table.tabla-responsive td {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 4px 0; border: none; font-size: 14px;
+    }
+    table.tabla-responsive td::before {
+        content: attr(data-label);
+        font-size: 11px; font-weight: 700; text-transform: uppercase;
+        color: var(--texto-muted); letter-spacing: 0.03em;
+    }
+    table.tabla-responsive td[data-label="Producto"] { font-size: 15px; }
 }

@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+{% block title %}Cobrar{% endblock %}
+{% block content %}
+
+{% if not caja %}
+<div class="alerta-caja">
+    No hay caja abierta. <a href="{{ url_for('caja.index') }}">Abrí caja acá</a> antes de cobrar.
+</div>
+{% endif %}
+
+<div class="pos-layout">
+    <div class="pos-buscar">
+        <label>Escanear o buscar producto (F3 para enfocar)</label>
+        <input type="text" id="input-buscar" autofocus placeholder="Código de barras o nombre...">
+        <div id="resultados-busqueda"></div>
+    </div>
+
+    <div class="pos-carrito">
+        <h3 style="margin-top:0;">Carrito</h3>
+        <table id="tabla-carrito">
+            <thead>
+                <tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Subtotal</th><th></th></tr>
+            </thead>
+            <tbody id="carrito-body">
+                {% for item in carrito %}
+                <tr data-id="{{ item.producto_id }}">
+                    <td>{{ item.nombre }}</td>
+                    <td>
+                        <button class="btn-cant-menos btn-chico">-</button>
+                        <span class="cantidad">{{ item.cantidad }}</span>
+                        <button class="btn-cant-mas btn-chico">+</button>
+                    </td>
+                    <td>${{ "%.2f"|format(item.precio) }}</td>
+                    <td class="subtotal">${{ "%.2f"|format(item.precio * item.cantidad) }}</td>
+                    <td><button class="btn-quitar btn-chico">Quitar</button></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="pos-total">
+            <div class="descuento-linea" id="linea-descuento" style="display:none;">Descuento: -$<span id="monto-descuento">0.00</span></div>
+            TOTAL: $<span id="total-carrito">{{ "%.2f"|format(total) }}</span>
+        </div>
+    </div>
+
+    <div class="pos-cobro">
+        <label>Medio de pago</label>
+        <select id="medio-pago">
+            <option value="efectivo">Efectivo</option>
+            <option value="tarjeta">Tarjeta</option>
+            <option value="transferencia">Transferencia</option>
+        </select>
+
+        <label>Promoción</label>
+        <select id="select-promocion">
+            <option value="">Sin promoción</option>
+        </select>
+
+        <div id="campo-efectivo">
+            <label>Monto recibido</label>
+            <input type="number" id="monto-recibido" step="0.01">
+            <div style="font-size:13px; color:var(--texto-muted);">Vuelto: <strong style="color:var(--success)">$<span id="vuelto-preview">0.00</span></strong></div>
+        </div>
+
+        <button id="btn-cobrar" class="btn-cobrar">F1 — Cobrar</button>
+        <button id="btn-nueva-venta" class="btn-secundario" style="margin-top:10px;">F2 — Nueva venta</button>
+    </div>
+</div>
+
+<div id="modal-ticket" class="modal oculto">
+    <div class="modal-contenido">
+        <h2>Venta registrada</h2>
+        <div id="ticket-detalle"></div>
+        <a id="btn-imprimir-ticket" href="#" target="_blank" class="btn btn-primario" style="width:100%; margin-top:14px; justify-content:center; text-decoration:none;">Imprimir ticket (Enter / Espacio)</a>
+        <button id="btn-cerrar-modal" class="btn" style="width:100%; margin-top:8px; justify-content:center;">Cerrar (Esc)</button>
+    </div>
+</div>
+
+<script>
+const inputBuscar = document.getElementById("input-buscar");
+const resultadosDiv = document.getElementById("resultados-busqueda");
+const carritoBody = document.getElementById("carrito-body");
+const totalSpan = document.getElementById("total-carrito");
+const lineaDescuento = document.getElementById("linea-descuento");
+const montoDescuentoSpan = document.getElementById("monto-descuento");
+const medioPagoSelect = document.getElementById("medio-pago");
+const selectPromocion = document.getElementById("select-promocion");
+const campoEfectivo = document.getElementById("campo-efectivo");
+const montoRecibidoInput = document.getElementById("monto-recibido");
+const vueltoPreview = document.getElementById("vuelto-preview");
+const modalTicket = document.getElementById("modal-ticket");
+
+let subtotalActual = {{ total }};
+let totalActual = {{ total }};
+let promociones = [];
+
+function post(url, body) {
+    return fetch(url, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify(body || {})
+    }).then(r => r.json().then(data => ({ status: r.status, data })));
+}
+
+// --- Cargar promociones activas y filtrarlas según medio de pago ---
+fetch("{{ url_for('promociones.disponibles') }}").then(r => r.json()).then(data => {
+    promociones = data;
+    renderSelectPromociones();
+});
+
+function renderSelectPromociones() {
+    const medioActual = medioPagoSelect.value;
+    const disponibles = promociones.filter(p => !p.medio_pago || p.medio_pago === medioActual);
+
+    selectPromocion.innerHTML = '<option value="">Sin promoción</option>';
+    disponibles.forEach(p => {
+        const etiqueta = p.tipo === "porcentaje" ? `${p.nombre} (-${p.valor}%)` : `${p.nombre} (-$${p.valor})`;
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.textContent = etiqueta;
+        selectPromocion.appendChild(opt);
+    });
+}
+
+function calcularDescuentoPreview() {
+    const promoId = selectPromocion.value;
+    if (!promoId) return 0;
+    const promo = promociones.find(p => p.id == promoId);
+    if (!promo) return 0;
+    if (promo.tipo === "porcentaje") return subtotalActual * (promo.valor / 100);
+    return Math.min(promo.valor, subtotalActual);
+}
+
+function recalcularTotal() {
+    const descuento = calcularDescuentoPreview();
+    totalActual = subtotalActual - descuento;
+    lineaDescuento.style.display = descuento > 0 ? "block" : "none";
+    montoDescuentoSpan.textContent = descuento.toFixed(2);
+    totalSpan.textContent = totalActual.toFixed(2);
+    actualizarVuelto();
+}
+
+function renderCarrito(carrito, total) {
+    carritoBody.innerHTML = "";
+    carrito.forEach(item => {
+        const subtotal = (item.precio * item.cantidad).toFixed(2);
+        const tr = document.createElement("tr");
+        tr.dataset.id = item.producto_id;
+        tr.innerHTML = `
+            <td>${item.nombre}</td>
+            <td>
+                <button class="btn-cant-menos btn-chico">-</button>
+                <span class="cantidad">${item.cantidad}</span>
+                <button class="btn-cant-mas btn-chico">+</button>
+            </td>
+            <td>$${item.precio.toFixed(2)}</td>
+            <td class="subtotal">$${subtotal}</td>
+            <td><button class="btn-quitar btn-chico">Quitar</button></td>
+        `;
+        carritoBody.appendChild(tr);
+    });
+    subtotalActual = total;
+    recalcularTotal();
+}
+
+function actualizarVuelto() {
+    const recibido = parseFloat(montoRecibidoInput.value) || 0;
+    const vuelto = recibido - totalActual;
+    vueltoPreview.textContent = vuelto >= 0 ? vuelto.toFixed(2) : "0.00";
+}
+
+inputBuscar.addEventListener("input", () => {
+    const query = inputBuscar.value.trim();
+    if (!query) { resultadosDiv.innerHTML = ""; return; }
+
+    post("{{ url_for('pos.buscar') }}", { query }).then(({ data }) => {
+        resultadosDiv.innerHTML = "";
+        data.forEach(p => {
+            const div = document.createElement("div");
+            div.className = "resultado-item";
+            div.textContent = `${p.nombre} — $${p.precio_venta.toFixed(2)} (stock: ${p.stock_actual})`;
+            div.addEventListener("click", () => agregarProducto(p.id));
+            resultadosDiv.appendChild(div);
+        });
+    });
+});
+
+inputBuscar.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        const query = inputBuscar.value.trim();
+        if (!query) return;
+
+        // No dependemos de que ya esté dibujado el resultado en pantalla (el lector de
+        // código de barras escribe y manda Enter tan rápido que a veces gana la carrera
+        // a la búsqueda). Buscamos y agregamos directo con la respuesta fresca.
+        post("{{ url_for('pos.buscar') }}", { query }).then(({ data }) => {
+            if (data.length > 0) {
+                agregarProducto(data[0].id);
+            }
+        });
+    }
+});
+
+function agregarProducto(producto_id) {
+    post("{{ url_for('pos.carrito_agregar') }}", { producto_id }).then(({ status, data }) => {
+        if (status !== 200) { alert(data.error); return; }
+        renderCarrito(data.carrito, data.total);
+        inputBuscar.value = "";
+        resultadosDiv.innerHTML = "";
+        inputBuscar.focus();
+    });
+}
+
+carritoBody.addEventListener("click", (e) => {
+    const tr = e.target.closest("tr");
+    if (!tr) return;
+    const producto_id = parseInt(tr.dataset.id);
+    const cantidadActual = parseInt(tr.querySelector(".cantidad").textContent);
+
+    if (e.target.classList.contains("btn-quitar")) {
+        post("{{ url_for('pos.carrito_quitar') }}", { producto_id }).then(({ data }) => renderCarrito(data.carrito, data.total));
+    } else if (e.target.classList.contains("btn-cant-mas")) {
+        post("{{ url_for('pos.carrito_actualizar') }}", { producto_id, cantidad: cantidadActual + 1 })
+            .then(({ status, data }) => { if (status !== 200) { alert(data.error); return; } renderCarrito(data.carrito, data.total); });
+    } else if (e.target.classList.contains("btn-cant-menos")) {
+        post("{{ url_for('pos.carrito_actualizar') }}", { producto_id, cantidad: cantidadActual - 1 })
+            .then(({ data }) => renderCarrito(data.carrito, data.total));
+    }
+});
+
+montoRecibidoInput.addEventListener("input", actualizarVuelto);
+selectPromocion.addEventListener("change", recalcularTotal);
+medioPagoSelect.addEventListener("change", () => {
+    const esEfectivo = medioPagoSelect.value === "efectivo";
+    campoEfectivo.style.display = esEfectivo ? "block" : "none";
+    renderSelectPromociones();
+    recalcularTotal();
+});
+
+function cobrar() {
+    if (totalActual <= 0) return;
+    const medio_pago = medioPagoSelect.value;
+    const monto_recibido = medio_pago === "efectivo" ? parseFloat(montoRecibidoInput.value) || null : null;
+    const promocion_id = selectPromocion.value || null;
+
+    post("{{ url_for('pos.cobrar') }}", { medio_pago, monto_recibido, promocion_id }).then(({ status, data }) => {
+        if (status !== 200) { alert(data.error); return; }
+        mostrarTicket(data);
+        renderCarrito([], 0);
+        montoRecibidoInput.value = "";
+        selectPromocion.value = "";
+    });
+}
+
+function mostrarTicket(venta) {
+    let html = `<p>Venta #${venta.venta_id} — ${venta.medio_pago}</p><ul>`;
+    venta.items.forEach(i => { html += `<li>${i.nombre} x${i.cantidad} — $${(i.precio * i.cantidad).toFixed(2)}</li>`; });
+    html += `</ul>`;
+    if (venta.descuento > 0) {
+        html += `<p>Subtotal: $${venta.subtotal.toFixed(2)}</p><p style="color:var(--success)">Descuento: -$${venta.descuento.toFixed(2)}</p>`;
+    }
+    html += `<p><strong>Total: $${venta.total.toFixed(2)}</strong></p>`;
+    if (venta.vuelto !== null && venta.vuelto !== undefined) html += `<p>Vuelto: $${venta.vuelto.toFixed(2)}</p>`;
+    document.getElementById("ticket-detalle").innerHTML = html;
+    document.getElementById("btn-imprimir-ticket").href = `/pos/ticket/${venta.venta_id}`;
+    modalTicket.classList.remove("oculto");
+}
+
+function cerrarModal() { modalTicket.classList.add("oculto"); inputBuscar.focus(); }
+
+document.getElementById("btn-cobrar").addEventListener("click", cobrar);
+document.getElementById("btn-cerrar-modal").addEventListener("click", cerrarModal);
+document.getElementById("btn-nueva-venta").addEventListener("click", () => {
+    post("{{ url_for('pos.carrito_vaciar') }}").then(({ data }) => renderCarrito(data.carrito, data.total));
+});
+
+document.addEventListener("keydown", (e) => {
+    if (!modalTicket.classList.contains("oculto") && (e.key === "Enter" || e.key === " ")) {
+        e.preventDefault();
+        document.getElementById("btn-imprimir-ticket").click();
+        return;
+    }
+    if (e.key === "F1") { e.preventDefault(); cobrar(); }
+    else if (e.key === "F2") { e.preventDefault(); post("{{ url_for('pos.carrito_vaciar') }}").then(({ data }) => renderCarrito(data.carrito, data.total)); }
+    else if (e.key === "F3") { e.preventDefault(); inputBuscar.focus(); }
+    else if (e.key === "Escape") { cerrarModal(); }
+});
+</script>
+{% endblock %}
