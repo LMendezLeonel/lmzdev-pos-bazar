@@ -21,7 +21,15 @@
 <body class="{{ 'con-sidebar' if session.user_id else 'sin-sidebar' }}">
 
     {% if session.user_id %}
-    <aside class="sidebar">
+    <div class="barra-movil">
+        <button id="abrir-menu-movil" class="btn-hamburguesa" aria-label="Abrir menú">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <span class="barra-movil-negocio">{{ session.nombre_bazar }}</span>
+    </div>
+    <div id="fondo-menu-movil" class="fondo-menu-movil"></div>
+
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-marca">
             <img src="{{ url_for('static', filename='img/lmzdev-icono.png') }}" alt="LMZ Dev" class="marca-logo-principal">
             <div class="marca-textos">
@@ -142,6 +150,30 @@
                 localStorage.setItem("sidebar", nuevo);
             });
         }
+
+        // Menú hamburguesa en celular: abre/cierra el sidebar como panel superpuesto
+        const btnAbrirMovil = document.getElementById("abrir-menu-movil");
+        const sidebarEl = document.getElementById("sidebar");
+        const fondoMovil = document.getElementById("fondo-menu-movil");
+
+        function cerrarMenuMovil() {
+            sidebarEl.classList.remove("sidebar-movil-abierta");
+            fondoMovil.classList.remove("visible");
+        }
+
+        if (btnAbrirMovil) {
+            btnAbrirMovil.addEventListener("click", () => {
+                sidebarEl.classList.add("sidebar-movil-abierta");
+                fondoMovil.classList.add("visible");
+            });
+        }
+        if (fondoMovil) {
+            fondoMovil.addEventListener("click", cerrarMenuMovil);
+        }
+        // Cerrar el menú al tocar cualquier link de navegación (celular)
+        document.querySelectorAll(".sidebar-nav a").forEach(link => {
+            link.addEventListener("click", cerrarMenuMovil);
+        });
     </script>
 </body>
 </html>

@@ -192,8 +192,17 @@ inputBuscar.addEventListener("input", () => {
 inputBuscar.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
         e.preventDefault();
-        const primerResultado = resultadosDiv.querySelector(".resultado-item");
-        if (primerResultado) primerResultado.click();
+        const query = inputBuscar.value.trim();
+        if (!query) return;
+
+        // No dependemos de que ya esté dibujado el resultado en pantalla (el lector de
+        // código de barras escribe y manda Enter tan rápido que a veces gana la carrera
+        // a la búsqueda). Buscamos y agregamos directo con la respuesta fresca.
+        post("{{ url_for('pos.buscar') }}", { query }).then(({ data }) => {
+            if (data.length > 0) {
+                agregarProducto(data[0].id);
+            }
+        });
     }
 });
 

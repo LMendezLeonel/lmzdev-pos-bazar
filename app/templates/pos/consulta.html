@@ -23,7 +23,7 @@
 </div>
 
 <div class="tabla-wrap">
-<table>
+<table class="tabla-responsive">
     <thead>
         <tr><th>Producto</th><th>Código</th><th>Precio</th><th>Stock</th></tr>
     </thead>
@@ -99,10 +99,10 @@ function render() {
             ? `<span class="badge badge-ok">${p.stock_actual}</span>`
             : `<span class="badge badge-bajo">Sin stock</span>`;
         tr.innerHTML = `
-            <td><strong>${p.nombre}</strong></td>
-            <td>${p.codigo_barras || '—'}</td>
-            <td>$${p.precio_venta.toFixed(2)}</td>
-            <td>${badge}</td>
+            <td data-label="Producto"><strong>${p.nombre}</strong></td>
+            <td data-label="Código">${p.codigo_barras || '—'}</td>
+            <td data-label="Precio">$${p.precio_venta.toFixed(2)}</td>
+            <td data-label="Stock">${badge}</td>
         `;
         tbody.appendChild(tr);
     });
