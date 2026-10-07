@@ -1,8 +1,12 @@
 import random
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+import re
+from flask import (Blueprint, render_template, request, redirect, url_for, flash, jsonify,
+                   send_from_directory, abort)
 
 from app.auth.decorators import login_required, requiere_rol
 from app.db import get_client_db
+from app.productos_util import (calcular_cuotas, guardar_imagen, borrar_imagen,
+                                carpeta_imagenes_cliente)
 
 bp = Blueprint("stock", __name__, url_prefix="/stock")
 
@@ -36,7 +40,26 @@ def index():
            ORDER BY p.nombre"""
     ).fetchall()
     categorias_presentes = sorted({p["categoria_nombre"] for p in productos if p["categoria_nombre"]})
-    return render_template("stock/lista.html", productos=productos, categorias_presentes=categorias_presentes)
+    cuotas = {p["id"]: calcular_cuotas(p["precio_venta"]) for p in productos}
+    return render_template("stock/lista.html", productos=productos,
+                           categorias_presentes=categorias_presentes, cuotas=cuotas)
+
+
+@bp.route("/imagen/<int:producto_id>")
+@login_required
+def imagen(producto_id):
+    """Sirve la imagen del producto (cualquier rol logueado, solo de SU cliente). ?descargar=1 la baja."""
+    db = get_client_db()
+    p = db.execute("SELECT nombre, imagen FROM productos WHERE id = ?", (producto_id,)).fetchone()
+    if p is None or not p["imagen"] or not re.fullmatch(r"[a-f0-9]{16}\.jpg", p["imagen"]):
+        abort(404)
+    descargar = request.args.get("descargar") == "1"
+    nombre_dl = re.sub(r"[^A-Za-z0-9_-]+", "_", p["nombre"]).strip("_") or "producto"
+    resp = send_from_directory(carpeta_imagenes_cliente(), p["imagen"], mimetype="image/jpeg",
+                               as_attachment=descargar, download_name=f"{nombre_dl}.jpg",
+                               max_age=3600)
+    resp.headers["Cache-Control"] = "private, max-age=3600"
+    return resp
 
 
 @bp.route("/nuevo", methods=["GET", "POST"])
@@ -60,16 +83,27 @@ def nuevo():
         flash("El nombre es obligatorio.", "warning")
         return redirect(url_for("stock.nuevo"))
 
+    imagen_nombre = None
+    archivo = request.files.get("imagen")
+    if archivo and archivo.filename:
+        try:
+            imagen_nombre = guardar_imagen(archivo)
+        except ValueError as e:
+            flash(str(e), "warning")
+            return redirect(url_for("stock.nuevo"))
+
     try:
         db.execute(
             """INSERT INTO productos
-               (nombre, codigo_barras, categoria_id, precio_venta, precio_costo, stock_actual, stock_minimo)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (nombre, codigo_barras, categoria_id, precio_venta, precio_costo, stock_actual, stock_minimo)
+               (nombre, codigo_barras, categoria_id, precio_venta, precio_costo, stock_actual, stock_minimo, imagen)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (nombre, codigo_barras, categoria_id, precio_venta, precio_costo, stock_actual, stock_minimo,
+             imagen_nombre)
         )
         db.commit()
         flash(f"Producto '{nombre}' creado.", "success")
     except Exception as e:
+        borrar_imagen(imagen_nombre)
         if "UNIQUE constraint failed" in str(e):
             flash("Ya existe un producto con ese código de barras.", "danger")
         else:
@@ -101,13 +135,32 @@ def editar(producto_id):
     stock_actual = int(request.form.get("stock_actual", 0) or 0)
     stock_minimo = int(request.form.get("stock_minimo", 0) or 0)
 
-    db.execute(
-        """UPDATE productos SET nombre=?, codigo_barras=?, categoria_id=?, precio_venta=?,
-           precio_costo=?, stock_actual=?, stock_minimo=? WHERE id=?""",
-        (nombre, codigo_barras, categoria_id, precio_venta, precio_costo,
-         stock_actual, stock_minimo, producto_id)
-    )
-    db.commit()
+    imagen_nombre = producto["imagen"]
+    archivo = request.files.get("imagen")
+    if archivo and archivo.filename:
+        try:
+            nueva = guardar_imagen(archivo)
+            borrar_imagen(imagen_nombre)
+            imagen_nombre = nueva
+        except ValueError as e:
+            flash(str(e), "warning")
+            return redirect(url_for("stock.editar", producto_id=producto_id))
+    elif request.form.get("quitar_imagen"):
+        borrar_imagen(imagen_nombre)
+        imagen_nombre = None
+
+    try:
+        db.execute(
+            """UPDATE productos SET nombre=?, codigo_barras=?, categoria_id=?, precio_venta=?,
+               precio_costo=?, stock_actual=?, stock_minimo=?, imagen=? WHERE id=?""",
+            (nombre, codigo_barras, categoria_id, precio_venta, precio_costo,
+             stock_actual, stock_minimo, imagen_nombre, producto_id)
+        )
+        db.commit()
+    except Exception as e:
+        flash("Ya existe un producto con ese código de barras." if "UNIQUE" in str(e)
+              else "Error al guardar el producto.", "danger")
+        return redirect(url_for("stock.editar", producto_id=producto_id))
     flash(f"Producto '{nombre}' actualizado.", "success")
     return redirect(url_for("stock.index"))
 

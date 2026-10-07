@@ -41,6 +41,7 @@ CREATE TABLE productos (
     alertas_activas BOOLEAN NOT NULL DEFAULT 1,
     activo BOOLEAN NOT NULL DEFAULT 1,
     fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    imagen TEXT,
     FOREIGN KEY (categoria_id) REFERENCES categorias(id)
 );
 

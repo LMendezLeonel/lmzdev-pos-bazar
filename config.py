@@ -45,3 +45,16 @@ SESSION_COOKIE_SAMESITE = "Lax"
 # DEBUG: apagado por defecto (seguro). En tu compu, si querés recarga automática
 # al guardar cambios, corré con la variable de entorno FLASK_DEBUG=1.
 DEBUG = os.environ.get("FLASK_DEBUG", "0") == "1"
+
+# --- Imágenes de productos ---
+# Se guardan en DATA_DIR/uploads/<cliente>/ (separado por cliente, y fuera del código).
+UPLOADS_DIR = os.path.join(DATA_DIR, "uploads")
+# Tamaño máximo de archivo subido (el servidor lo redimensiona igual a 1000px)
+MAX_CONTENT_LENGTH = 10 * 1024 * 1024
+IMAGEN_MAX_LADO = 1000
+
+# --- Venta en cuotas ---
+# Se pide de entrega el 50% del precio; el otro 50% lleva 80% de interés y se divide en 3 cuotas.
+CUOTAS_ENTREGA_PCT = 50
+CUOTAS_INTERES_PCT = 80
+CUOTAS_CANTIDAD = 3

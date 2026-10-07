@@ -25,10 +25,10 @@
 <div class="tabla-wrap">
 <table class="tabla-responsive">
     <thead>
-        <tr><th>Producto</th><th>Código</th><th>Precio</th><th>Stock</th></tr>
+        <tr><th>Producto</th><th>Código</th><th>Precio</th><th>Stock</th><th></th></tr>
     </thead>
     <tbody id="tabla-body">
-        <tr><td colspan="4" style="text-align:center; color:var(--texto-muted); padding:20px;">Cargando...</td></tr>
+        <tr><td colspan="5" style="text-align:center; color:var(--texto-muted); padding:20px;">Cargando...</td></tr>
     </tbody>
 </table>
 </div>
@@ -76,6 +76,8 @@ function seleccionarCategoria(categoria, btnClickeado) {
     render();
 }
 
+const esc = t => String(t).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
 function render() {
     const query = inputBuscar.value.trim().toLowerCase();
     let lista = productos.filter(p => {
@@ -89,7 +91,7 @@ function render() {
 
     tbody.innerHTML = "";
     if (lista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:var(--texto-muted); padding:20px;">Sin resultados.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--texto-muted); padding:20px;">Sin resultados.</td></tr>';
         return;
     }
 
@@ -99,11 +101,13 @@ function render() {
             ? `<span class="badge badge-ok">${p.stock_actual}</span>`
             : `<span class="badge badge-bajo">Sin stock</span>`;
         tr.innerHTML = `
-            <td data-label="Producto"><strong>${p.nombre}</strong></td>
+            <td data-label="Producto"><div class="producto-celda">${p.tiene_imagen ? `<img class="miniatura" loading="lazy" src="/stock/imagen/${p.id}" alt="">` : '<span class="miniatura-vacia"></span>'}<strong>${esc(p.nombre)}</strong></div></td>
             <td data-label="Código">${p.codigo_barras || '—'}</td>
             <td data-label="Precio">$${p.precio_venta.toFixed(2)}</td>
             <td data-label="Stock">${badge}</td>
+            <td data-label=""><button type="button" class="btn btn-chico">Ver / Cuotas</button></td>
         `;
+        tr.querySelector("button").addEventListener("click", () => abrirProducto(p));
         tbody.appendChild(tr);
     });
 }

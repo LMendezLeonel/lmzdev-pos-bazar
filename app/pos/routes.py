@@ -3,6 +3,7 @@ from flask import Blueprint, render_template, session, request, jsonify, send_fi
 from app.auth.decorators import login_required, requiere_rol
 from app.db import get_client_db, obtener_caja_abierta
 from app.reportes import exportar
+from app.productos_util import calcular_cuotas
 
 bp = Blueprint("pos", __name__, url_prefix="/pos")
 
@@ -41,11 +42,17 @@ def productos_todos():
     db = get_client_db()
     productos = db.execute(
         """SELECT p.id, p.nombre, p.codigo_barras, p.precio_venta, p.stock_actual,
-                  c.nombre AS categoria_nombre
+                  c.nombre AS categoria_nombre, (p.imagen IS NOT NULL) AS tiene_imagen
            FROM productos p LEFT JOIN categorias c ON p.categoria_id = c.id
            WHERE p.activo = 1 ORDER BY p.nombre"""
     ).fetchall()
-    return jsonify([dict(p) for p in productos])
+    resultado = []
+    for p in productos:
+        d = dict(p)
+        d["tiene_imagen"] = bool(d["tiene_imagen"])
+        d["cuotas"] = calcular_cuotas(d["precio_venta"])
+        resultado.append(d)
+    return jsonify(resultado)
 
 
 @bp.route("/buscar", methods=["POST"])

@@ -77,6 +77,7 @@ def get_client_db():
         g.client_db = sqlite3.connect(ruta)
         g.client_db.row_factory = sqlite3.Row
         g.client_db.execute("PRAGMA foreign_keys = ON")
+        _migrar_conexion(g.client_db)  # por si se creó una base nueva con la plantilla vieja
 
     return g.client_db
 
@@ -98,6 +99,27 @@ def close_db(e=None):
 def init_app(app):
     app.teardown_appcontext(close_db)
     inicializar_almacenamiento(app)
+    migrar_todas_las_bases(app)
+
+
+def _migrar_conexion(conn):
+    """Migraciones livianas e idempotentes: agregan columnas nuevas a bases ya existentes."""
+    cols = [r[1] for r in conn.execute("PRAGMA table_info(productos)").fetchall()]
+    if cols and "imagen" not in cols:
+        conn.execute("ALTER TABLE productos ADD COLUMN imagen TEXT")
+        conn.commit()
+
+
+def migrar_todas_las_bases(app):
+    """Al arrancar: aplica migraciones a _template.db y a todos los .db de clientes."""
+    carpeta = app.config["CLIENTS_DB_DIR"]
+    for nombre in os.listdir(carpeta):
+        if nombre.endswith(".db"):
+            conn = sqlite3.connect(os.path.join(carpeta, nombre))
+            try:
+                _migrar_conexion(conn)
+            finally:
+                conn.close()
 
 
 def inicializar_almacenamiento(app):
@@ -132,6 +154,7 @@ def conectar_client_db_directo(db_filename):
     conn = sqlite3.connect(ruta)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    _migrar_conexion(conn)
     return conn
 
 

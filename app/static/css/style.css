@@ -514,3 +514,20 @@ html[data-tema="claro"] .login-fondo {
     }
     table.tabla-responsive td[data-label="Producto"] { font-size: 15px; }
 }
+
+/* ============================================
+   PRODUCTO: miniatura + modal imagen/cuotas
+   ============================================ */
+.miniatura { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); vertical-align: middle; margin-right: 10px; }
+.miniatura-vacia { display: inline-block; width: 40px; height: 40px; border-radius: 8px; border: 1px dashed var(--border); vertical-align: middle; margin-right: 10px; }
+.producto-celda { display: flex; align-items: center; }
+.modal-producto { max-width: 440px; max-height: 90vh; overflow-y: auto; }
+.mp-titulo { margin: 0 0 12px; font-size: 18px; }
+.mp-imagen { display: block; width: 100%; max-height: 300px; object-fit: contain; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 10px; background: #fff; }
+.mp-precio { margin: 14px 0 10px; font-size: 14px; }
+.mp-cuotas { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+.mp-cuotas h3 { margin: 0 0 8px; font-size: 14px; color: var(--accent); }
+.mp-fila { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; }
+.mp-total { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 8px; }
+.mp-nota { font-size: 11.5px; color: var(--texto-muted); margin: 8px 0 0; }
+.form-imagen-actual { max-width: 160px; border-radius: 10px; border: 1px solid var(--border); display: block; margin-bottom: 8px; }

@@ -30,7 +30,7 @@
     <thead>
         <tr>
             <th>Producto</th><th>Categoría</th><th>Código</th>
-            <th>Precio</th><th>Stock</th><th>Estado</th>
+            <th>Precio</th><th>Stock</th><th>Estado</th><th></th>
             {% if session.rol == 'dueño' %}<th></th>{% endif %}
         </tr>
     </thead>
@@ -39,7 +39,12 @@
         <tr class="{{ 'stock-bajo' if p.alertas_activas and p.stock_actual <= p.stock_minimo else '' }}"
             data-nombre="{{ p.nombre|lower }}" data-codigo="{{ p.codigo_barras or '' }}" data-precio="{{ p.precio_venta }}"
             data-categoria="{{ (p.categoria_nombre or '')|lower }}">
-            <td><strong>{{ p.nombre }}</strong></td>
+            <td>
+                <div class="producto-celda">
+                {% if p.imagen %}<img class="miniatura" loading="lazy" src="{{ url_for('stock.imagen', producto_id=p.id) }}" alt="">{% else %}<span class="miniatura-vacia"></span>{% endif %}
+                <strong>{{ p.nombre }}</strong>
+                </div>
+            </td>
             <td>{{ p.categoria_nombre or '—' }}</td>
             <td>{{ p.codigo_barras or '—' }}</td>
             <td>${{ "%.2f"|format(p.precio_venta) }}</td>
@@ -51,6 +56,7 @@
                     <span class="badge badge-ok">Disponible</span>
                 {% endif %}
             </td>
+            <td><button type="button" class="btn btn-chico" onclick='abrirProducto({{ {"id": p.id, "nombre": p.nombre, "precio_venta": p.precio_venta, "tiene_imagen": (p.imagen is not none), "cuotas": cuotas[p.id]}|tojson }})'>Ver / Cuotas</button></td>
             {% if session.rol == 'dueño' %}
             <td style="white-space:nowrap">
                 <a href="{{ url_for('stock.editar', producto_id=p.id) }}" class="btn btn-chico">Editar</a>
@@ -66,7 +72,7 @@
             {% endif %}
         </tr>
         {% else %}
-        <tr><td colspan="7" style="text-align:center; color:var(--texto-muted); padding:24px;">Todavía no cargaste productos.</td></tr>
+        <tr><td colspan="8" style="text-align:center; color:var(--texto-muted); padding:24px;">Todavía no cargaste productos.</td></tr>
         {% endfor %}
     </tbody>
 </table>
